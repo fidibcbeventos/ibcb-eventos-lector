@@ -640,47 +640,17 @@ function mostrarLector(){
 
             function(decodedText){
 
-                console.log(
-                    "QR detectado:",
-                    decodedText
-                );
+    console.log(
+        "QR detectado:",
+        decodedText
+    );
 
 
-                estado.innerHTML = `
+    procesarQRDetectado(
+        decodedText
+    );
 
-                    <div style="
-                        background:#EEF7EE;
-                        padding:15px;
-                        border-radius:10px;
-                        color:#2E7D32;
-                    ">
-
-                        <b>
-                            ✅ QR detectado
-                        </b>
-
-                        <br><br>
-
-                        Código:
-
-                        <b>
-                            ${decodedText}
-                        </b>
-
-                    </div>
-
-                `;
-
-
-                /*
-                 * Por ahora NO enviamos
-                 * nada a Apps Script.
-                 *
-                 * Primero comprobamos
-                 * que el lector funcione.
-                 */
-
-            },
+},
 
             function(errorMessage){
 
@@ -739,6 +709,618 @@ function mostrarLector(){
         });
 
     }
+    // ==========================================
+// PROCESAR QR DETECTADO
+// ==========================================
+
+let procesandoQR = false;
+
+
+function procesarQRDetectado(decodedText){
+
+    /*
+     * Evita procesar el mismo QR
+     * varias veces mientras la cámara
+     * continúa detectándolo.
+     */
+
+    if(procesandoQR){
+
+        return;
+
+    }
+
+
+    /*
+     * Verificar que exista token.
+     */
+
+    if(!tokenLector){
+
+        mostrarResultadoAcceso({
+
+            ok: false,
+
+            tipo:
+                "lector_no_autorizado",
+
+            mensaje:
+                "La sesión del lector no está autorizada."
+
+        });
+
+        return;
+
+    }
+
+
+    /*
+     * Limpiar el texto recibido.
+     */
+
+    const idEntrada =
+        String(
+            decodedText || ""
+        ).trim();
+
+
+    if(!idEntrada){
+
+        return;
+
+    }
+
+
+    procesandoQR = true;
+
+
+    const estado =
+        document.getElementById(
+            "estado"
+        );
+
+
+    if(estado){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#FFF4E5;
+                border:1px solid #F3D19C;
+                border-radius:10px;
+                padding:18px;
+                color:#8A5A00;
+                text-align:center;
+            ">
+
+                <div style="
+                    font-size:38px;
+                    margin-bottom:8px;
+                ">
+                    ⏳
+                </div>
+
+                <b>
+                    Verificando entrada...
+                </b>
+
+                <br><br>
+
+                ${idEntrada}
+
+            </div>
+
+        `;
+
+    }
+
+
+    /*
+     * ==========================================
+     * CALLBACK
+     * ==========================================
+     */
+
+    const callback =
+        "respuestaIngreso_" +
+        Date.now();
+
+
+    window[callback] =
+        function(respuesta){
+
+            console.log(
+                "Respuesta ingreso:",
+                respuesta
+            );
+
+
+            /*
+             * Eliminar callback global.
+             */
+
+            delete window[callback];
+
+
+            /*
+             * Eliminar script temporal.
+             */
+
+            if(script){
+
+                script.remove();
+
+            }
+
+
+            /*
+             * Mostrar resultado.
+             */
+
+            mostrarResultadoAcceso(
+                respuesta
+            );
+
+
+            /*
+             * Después de unos segundos,
+             * dejamos listo el lector
+             * para la siguiente persona.
+             */
+
+            setTimeout(
+                function(){
+
+                    procesandoQR = false;
+
+                    const estadoActual =
+                        document.getElementById(
+                            "estado"
+                        );
+
+
+                    if(estadoActual){
+
+                        estadoActual.innerHTML = `
+
+                            <div style="
+                                background:#EEF3FA;
+                                border:1px solid #C8D8EF;
+                                border-radius:10px;
+                                padding:15px;
+                                color:#315A8A;
+                                text-align:center;
+                            ">
+
+                                <div style="
+                                    font-size:35px;
+                                ">
+                                    📷
+                                </div>
+
+                                <b>
+                                    Listo para el siguiente ingreso
+                                </b>
+
+                                <br><br>
+
+                                Apuntá al próximo código QR.
+
+                            </div>
+
+                        `;
+
+                    }
+
+                },
+                2500
+            );
+
+        };
+
+
+    /*
+     * ==========================================
+     * CREAR PETICIÓN
+     * ==========================================
+     */
+
+    const script =
+        document.createElement(
+            "script"
+        );
+
+
+    script.src =
+        "https://script.google.com/macros/s/" +
+        "AKfycbwyKsXfNxet9ScWu1sQ40eoy6Q2rYfMKsmd6Ic3Fy39AEmw8raRAH74chzsfq6qksouJQ" +
+        "/exec" +
+        "?accion=registrarIngreso" +
+        "&idEntrada=" +
+        encodeURIComponent(
+            idEntrada
+        ) +
+        "&token=" +
+        encodeURIComponent(
+            tokenLector
+        ) +
+        "&callback=" +
+        encodeURIComponent(
+            callback
+        );
+
+
+    /*
+     * ==========================================
+     * ERROR DE CONEXIÓN
+     * ==========================================
+     */
+
+    script.onerror =
+        function(){
+
+            console.error(
+                "No se pudo conectar con Apps Script."
+            );
+
+
+            if(script){
+
+                script.remove();
+
+            }
+
+
+            mostrarResultadoAcceso({
+
+                ok: false,
+
+                tipo:
+                    "error_conexion",
+
+                mensaje:
+                    "No se pudo conectar con el servidor."
+
+            });
+
+
+            setTimeout(
+                function(){
+
+                    procesandoQR = false;
+
+                },
+                2500
+            );
+
+        };
+
+
+    document.body.appendChild(
+        script
+    );
+
+}
+    // ==========================================
+// MOSTRAR RESULTADO DEL ACCESO
+// ==========================================
+
+function mostrarResultadoAcceso(respuesta){
+
+    const estado =
+        document.getElementById(
+            "estado"
+        );
+
+
+    if(!estado){
+
+        return;
+
+    }
+
+
+    /*
+     * ==========================================
+     * ACCESO AUTORIZADO
+     * ==========================================
+     */
+
+    if(
+        respuesta &&
+        respuesta.ok === true &&
+        respuesta.tipo ===
+            "acceso_autorizado"
+    ){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#EEF7EE;
+                border:1px solid #B7E4C7;
+                border-radius:12px;
+                padding:20px;
+                color:#2E7D32;
+                text-align:center;
+            ">
+
+                <div style="
+                    font-size:55px;
+                    margin-bottom:8px;
+                ">
+                    🟢
+                </div>
+
+                <div style="
+                    font-size:22px;
+                    font-weight:bold;
+                ">
+                    ACCESO AUTORIZADO
+                </div>
+
+                <br>
+
+                <b>
+                    ${respuesta.idEntrada || ""}
+                </b>
+
+                <br><br>
+
+                ${
+                    respuesta.nombre || ""
+                }
+
+                ${
+                    respuesta.apellido || ""
+                }
+
+                <br>
+
+                📍
+                ${
+                    respuesta.sede || ""
+                }
+
+                <br><br>
+
+                <span style="
+                    font-size:13px;
+                    color:#555;
+                ">
+
+                    Ingreso registrado:
+                    ${
+                        respuesta.horaIngreso || ""
+                    }
+
+                </span>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    /*
+     * ==========================================
+     * ENTRADA YA UTILIZADA
+     * ==========================================
+     */
+
+    if(
+        respuesta &&
+        (
+            respuesta.tipo ===
+                "ya_utilizada" ||
+
+            respuesta.tipo ===
+                "entrada_ya_utilizada"
+        )
+    ){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#FDECEC;
+                border:1px solid #F5C2C2;
+                border-radius:12px;
+                padding:20px;
+                color:#B00020;
+                text-align:center;
+            ">
+
+                <div style="
+                    font-size:55px;
+                    margin-bottom:8px;
+                ">
+                    🔴
+                </div>
+
+                <div style="
+                    font-size:22px;
+                    font-weight:bold;
+                ">
+                    ENTRADA YA UTILIZADA
+                </div>
+
+                <br>
+
+                <b>
+                    ${
+                        respuesta.idEntrada || ""
+                    }
+                </b>
+
+                <br><br>
+
+                ${
+                    respuesta.mensaje ||
+                    "Esta entrada ya fue utilizada."
+                }
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    /*
+     * ==========================================
+     * ENTRADA NO VÁLIDA
+     * ==========================================
+     */
+
+    if(
+        respuesta &&
+        (
+            respuesta.tipo ===
+                "entrada_no_valida" ||
+
+            respuesta.tipo ===
+                "no_encontrada"
+        )
+    ){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#FFF4E5;
+                border:1px solid #F3D19C;
+                border-radius:12px;
+                padding:20px;
+                color:#8A5A00;
+                text-align:center;
+            ">
+
+                <div style="
+                    font-size:55px;
+                    margin-bottom:8px;
+                ">
+                    ❌
+                </div>
+
+                <div style="
+                    font-size:22px;
+                    font-weight:bold;
+                ">
+                    ENTRADA NO VÁLIDA
+                </div>
+
+                <br>
+
+                ${
+                    respuesta.mensaje ||
+                    "No se encontró una entrada válida."
+                }
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    /*
+     * ==========================================
+     * LECTOR NO AUTORIZADO
+     * ==========================================
+     */
+
+    if(
+        respuesta &&
+        respuesta.tipo ===
+            "lector_no_autorizado"
+    ){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#FDECEC;
+                border:1px solid #F5C2C2;
+                border-radius:12px;
+                padding:20px;
+                color:#B00020;
+                text-align:center;
+            ">
+
+                <div style="
+                    font-size:50px;
+                ">
+                    🔐
+                </div>
+
+                <b>
+                    LECTOR NO AUTORIZADO
+                </b>
+
+                <br><br>
+
+                ${
+                    respuesta.mensaje ||
+                    "La sesión no está autorizada."
+                }
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    /*
+     * ==========================================
+     * ERROR GENERAL
+     * ==========================================
+     */
+
+    estado.innerHTML = `
+
+        <div style="
+            background:#FDECEC;
+            border:1px solid #F5C2C2;
+            border-radius:12px;
+            padding:20px;
+            color:#B00020;
+            text-align:center;
+        ">
+
+            <div style="
+                font-size:50px;
+            ">
+                ⚠️
+            </div>
+
+            <b>
+                No se pudo procesar la entrada
+            </b>
+
+            <br><br>
+
+            ${
+                respuesta &&
+                (
+                    respuesta.mensaje ||
+                    respuesta.error
+                )
+                ||
+                "Ocurrió un error inesperado."
+            }
+
+        </div>
+
+    `;
+
+}
     
 </script>
 
