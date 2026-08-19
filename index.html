@@ -355,6 +355,8 @@ let tokenLector = null;
 let ingresosRegistrados = 0;
 
 let expiracionToken = null;
+    
+let temporizadorExpiracion = null;
     // ==========================================
 // AUTORIZAR LECTOR DESDE GITHUB
 // ==========================================
@@ -463,6 +465,7 @@ function autorizarDesdeGitHub(){
                 expiracionToken =
     Date.now() +
     (30 * 60 * 1000);
+                iniciarTemporizadorExpiracion();
 
 
                 estado.innerHTML = `
@@ -724,6 +727,264 @@ function actualizarExpiracionSesion(){
         </b>
 
     `;
+
+}
+    // ==========================================
+// CONTROLAR EXPIRACIÓN DE SESIÓN
+// ==========================================
+
+function iniciarTemporizadorExpiracion(){
+
+    /*
+     * Si ya existía un temporizador,
+     * lo eliminamos.
+     */
+
+    if(temporizadorExpiracion){
+
+        clearInterval(
+            temporizadorExpiracion
+        );
+
+    }
+
+
+    /*
+     * Comprobar cada segundo.
+     */
+
+    temporizadorExpiracion =
+        setInterval(
+
+            function(){
+
+                /*
+                 * Si no existe expiración,
+                 * no hacemos nada.
+                 */
+
+                if(!expiracionToken){
+
+                    return;
+
+                }
+
+
+                /*
+                 * Comprobar si ya venció.
+                 */
+
+                if(
+                    Date.now() >=
+                    expiracionToken
+                ){
+
+                    clearInterval(
+                        temporizadorExpiracion
+                    );
+
+
+                    temporizadorExpiracion =
+                        null;
+
+
+                    manejarSesionExpirada();
+
+                }
+
+            },
+
+            1000
+
+        );
+
+}
+    // ==========================================
+// MANEJAR SESIÓN EXPIRADA
+// ==========================================
+
+function manejarSesionExpirada(){
+
+    /*
+     * Evitar procesos posteriores.
+     */
+
+    tokenLector = null;
+
+    procesandoQR = false;
+
+
+    /*
+     * Detener cámara.
+     */
+
+    if(
+        scannerQR &&
+        scannerActivo
+    ){
+
+        scannerQR.stop()
+
+            .then(function(){
+
+                console.log(
+                    "Cámara detenida por expiración."
+                );
+
+            })
+
+            .catch(function(error){
+
+                console.error(
+                    "Error al detener cámara:",
+                    error
+                );
+
+            });
+
+    }
+
+
+    scannerActivo = false;
+
+    scannerQR = null;
+
+
+    /*
+     * Reiniciar datos de sesión.
+     */
+
+    ingresosRegistrados = 0;
+
+    expiracionToken = null;
+
+
+    /*
+     * Limpiar lector.
+     */
+
+    const lector =
+        document.getElementById(
+            "lectorQR"
+        );
+
+
+    if(lector){
+
+        lector.innerHTML = "";
+
+    }
+
+
+    /*
+     * Ocultar lector.
+     */
+
+    const pantallaLector =
+        document.getElementById(
+            "pantallaLector"
+        );
+
+
+    if(pantallaLector){
+
+        pantallaLector.style.display =
+            "none";
+
+    }
+
+
+    /*
+     * Mostrar autorización.
+     */
+
+    const autorizacion =
+        document.getElementById(
+            "pantallaAutorizacion"
+        );
+
+
+    if(autorizacion){
+
+        autorizacion.style.display =
+            "block";
+
+    }
+
+
+    /*
+     * Mostrar aviso.
+     */
+
+    const estado =
+        document.getElementById(
+            "estadoAutorizacion"
+        );
+
+
+    if(estado){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#FFF4E5;
+                border:1px solid #F3D19C;
+                border-radius:12px;
+                padding:18px;
+                color:#8A5A00;
+                text-align:center;
+            ">
+
+                <div style="
+                    font-size:45px;
+                    margin-bottom:8px;
+                ">
+                    🔐
+                </div>
+
+                <div style="
+                    font-size:20px;
+                    font-weight:bold;
+                ">
+
+                    SESIÓN EXPIRADA
+
+                </div>
+
+                <br>
+
+                Por seguridad, la sesión
+                del lector ha finalizado.
+
+                <br><br>
+
+                Ingresá nuevamente el
+                código de Secretaría.
+
+            </div>
+
+        `;
+
+    }
+
+
+    /*
+     * Enfocar el campo.
+     */
+
+    const input =
+        document.getElementById(
+            "codigoSecretaria"
+        );
+
+
+    if(input){
+
+        input.value = "";
+
+        input.focus();
+
+    }
 
 }
     
@@ -1534,15 +1795,32 @@ function cerrarSesionLector(){
 
 
     /*
-     * ==========================================
-     * REINICIAR CONTADORES
-     * ==========================================
-     */
+ * ==========================================
+ * REINICIAR CONTADORES
+ * ==========================================
+ */
 
-    ingresosRegistrados = 0;
+ingresosRegistrados = 0;
 
-    expiracionToken = null;
+expiracionToken = null;
 
+
+/*
+ * ==========================================
+ * DETENER TEMPORIZADOR DE EXPIRACIÓN
+ * ==========================================
+ */
+
+if(temporizadorExpiracion){
+
+    clearInterval(
+        temporizadorExpiracion
+    );
+
+    temporizadorExpiracion =
+        null;
+
+}
 
     /*
      * ==========================================
