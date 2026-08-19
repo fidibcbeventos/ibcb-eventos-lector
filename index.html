@@ -248,26 +248,55 @@
         >
 
             <div style="
-                background:#EEF7EE;
-                border:1px solid #B7E4C7;
-                border-radius:10px;
-                padding:15px;
-                margin-bottom:20px;
-                text-align:center;
-                color:#2E7D32;
-            ">
+    background:#EEF7EE;
+    border:1px solid #B7E4C7;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:20px;
+    text-align:center;
+    color:#2E7D32;
+">
 
-                <b>
-                    ✅ Lector autorizado
-                </b>
+    <div style="
+        font-size:20px;
+        font-weight:bold;
+        margin-bottom:6px;
+    ">
 
-                <br>
+        ✅ Lector autorizado
 
-                <span style="font-size:13px;">
-                    Sesión activa durante 30 minutos
-                </span>
+    </div>
 
-            </div>
+
+    <div
+        id="contadorIngresos"
+        style="
+            font-size:14px;
+            color:#444;
+            margin-top:8px;
+        "
+    >
+
+        🎟️ Ingresos registrados:
+        <b>0</b>
+
+    </div>
+
+
+    <div
+        id="expiracionSesion"
+        style="
+            font-size:13px;
+            color:#666;
+            margin-top:5px;
+        "
+    >
+
+        ⏱️ Sesión activa
+
+    </div>
+
+</div>
 
 
             <!-- LECTOR -->
@@ -308,6 +337,10 @@
 let scannerActivo = false;
 
 let tokenLector = null;
+
+let ingresosRegistrados = 0;
+
+let expiracionToken = null;
     // ==========================================
 // AUTORIZAR LECTOR DESDE GITHUB
 // ==========================================
@@ -412,6 +445,10 @@ function autorizarDesdeGitHub(){
 
                 tokenLector =
                     respuesta.token;
+                
+                expiracionToken =
+    Date.now() +
+    (30 * 60 * 1000);
 
 
                 estado.innerHTML = `
@@ -577,8 +614,105 @@ function mostrarLector(){
             "block";
 
     }
+    actualizarContadorIngresos();
+
+actualizarExpiracionSesion();
 
 }
+    // ==========================================
+// ACTUALIZAR CONTADOR DE INGRESOS
+// ==========================================
+
+function actualizarContadorIngresos(){
+
+    const contador =
+        document.getElementById(
+            "contadorIngresos"
+        );
+
+
+    if(!contador){
+
+        return;
+
+    }
+
+
+    contador.innerHTML = `
+
+        🎟️ Ingresos registrados:
+
+        <b>
+            ${ingresosRegistrados}
+        </b>
+
+    `;
+
+}
+    // ==========================================
+// MOSTRAR EXPIRACIÓN DE SESIÓN
+// ==========================================
+
+function actualizarExpiracionSesion(){
+
+    const elemento =
+        document.getElementById(
+            "expiracionSesion"
+        );
+
+
+    if(!elemento){
+
+        return;
+
+    }
+
+
+    if(!expiracionToken){
+
+        elemento.innerHTML =
+            "⏱️ Sesión activa";
+
+        return;
+
+    }
+
+
+    const fecha =
+        new Date(
+            expiracionToken
+        );
+
+
+    const horas =
+        String(
+            fecha.getHours()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const minutos =
+        String(
+            fecha.getMinutes()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    elemento.innerHTML = `
+
+        ⏱️ Sesión válida hasta
+        <b>
+            ${horas}:${minutos}
+        </b>
+
+    `;
+
+}
+    
 
 
     function iniciarScanner(){
@@ -1032,6 +1166,9 @@ function mostrarResultadoAcceso(respuesta){
         respuesta.tipo ===
             "acceso_autorizado"
     ){
+        ingresosRegistrados++;
+
+actualizarContadorIngresos();
 
         estado.innerHTML = `
 
