@@ -147,11 +147,10 @@
 
     <div class="contenedor">
 
-
         <div class="encabezado">
 
             <div class="icono">
-                📷
+                🔐
             </div>
 
             <h1>
@@ -159,46 +158,145 @@
             </h1>
 
             <div class="subtitulo">
-
                 IBCB Eventos
-
             </div>
 
         </div>
 
 
-        <!-- LECTOR -->
+        <!-- ==================================
+             AUTORIZACIÓN
+             ================================== -->
 
-        <div id="lectorQR"></div>
+        <div id="pantallaAutorizacion">
+
+            <div style="
+                text-align:center;
+                margin-bottom:20px;
+            ">
+
+                <div style="
+                    font-size:45px;
+                    margin-bottom:10px;
+                ">
+                    🔐
+                </div>
+
+                <h2 style="
+                    margin:5px 0;
+                ">
+                    Control de Secretaría
+                </h2>
+
+                <p style="
+                    color:#666;
+                    line-height:1.5;
+                ">
+
+                    Ingresá el código de Secretaría
+                    para habilitar el lector.
+
+                </p>
+
+            </div>
 
 
-        <!-- ESTADO -->
+            <input
+                id="codigoSecretaria"
+                type="password"
+                placeholder="Código de Secretaría"
+                autocomplete="off"
+                style="
+                    width:100%;
+                    padding:15px;
+                    border:1px solid #D5D9E0;
+                    border-radius:10px;
+                    font-size:16px;
+                    margin-bottom:12px;
+                "
+            >
 
-        <div id="estado">
 
-            Presioná el botón para activar
-            la cámara.
+            <button
+                id="btnAutorizar"
+                onclick="autorizarDesdeGitHub()">
+
+                🔐 Ingresar
+
+            </button>
+
+
+            <div
+                id="estadoAutorizacion"
+                style="
+                    margin-top:15px;
+                    text-align:center;
+                    line-height:1.5;
+                "
+            ></div>
 
         </div>
 
 
-        <br>
+        <!-- ==================================
+             LECTOR
+             ================================== -->
 
-<button
-    onclick="probarConexionAppsScript()"
-    style="margin-bottom:12px;">
+        <div
+            id="pantallaLector"
+            style="display:none;"
+        >
 
-    🔗 Probar conexión con Apps Script
+            <div style="
+                background:#EEF7EE;
+                border:1px solid #B7E4C7;
+                border-radius:10px;
+                padding:15px;
+                margin-bottom:20px;
+                text-align:center;
+                color:#2E7D32;
+            ">
 
-</button>
-        <button
-            id="btnIniciarScanner"
-            onclick="iniciarScanner()">
+                <b>
+                    ✅ Lector autorizado
+                </b>
 
-            📷 Activar cámara
+                <br>
 
-        </button>
+                <span style="font-size:13px;">
+                    Sesión activa durante 30 minutos
+                </span>
 
+            </div>
+
+
+            <!-- LECTOR -->
+
+            <div id="lectorQR"></div>
+
+
+            <!-- ESTADO -->
+
+            <div id="estado">
+
+                Presioná el botón para activar
+                la cámara.
+
+            </div>
+
+
+            <br>
+
+
+            <button
+                id="btnIniciarScanner"
+                onclick="iniciarScanner()">
+
+                📷 Activar cámara
+
+            </button>
+
+        </div>
 
     </div>
 
@@ -207,7 +305,280 @@
 
     let scannerQR = null;
 
-    let scannerActivo = false;
+let scannerActivo = false;
+
+let tokenLector = null;
+    // ==========================================
+// AUTORIZAR LECTOR DESDE GITHUB
+// ==========================================
+
+function autorizarDesdeGitHub(){
+
+    const input =
+        document.getElementById(
+            "codigoSecretaria"
+        );
+
+
+    const boton =
+        document.getElementById(
+            "btnAutorizar"
+        );
+
+
+    const estado =
+        document.getElementById(
+            "estadoAutorizacion"
+        );
+
+
+    const codigo =
+        String(
+            input.value || ""
+        ).trim();
+
+
+    if(!codigo){
+
+        estado.innerHTML = `
+
+            <div style="
+                background:#FFF4E5;
+                border:1px solid #F3D19C;
+                border-radius:10px;
+                padding:12px;
+                color:#8A5A00;
+            ">
+
+                ⚠️ Ingresá el código de Secretaría.
+
+            </div>
+
+        `;
+
+        input.focus();
+
+        return;
+
+    }
+
+
+    boton.disabled = true;
+
+    boton.innerHTML =
+        "⏳ Verificando...";
+
+
+    estado.innerHTML =
+        "Conectando con Apps Script...";
+
+
+    const callback =
+        "respuestaAutorizacion_" +
+        Date.now();
+
+
+    window[callback] =
+        function(respuesta){
+
+            console.log(
+                "Respuesta autorización:",
+                respuesta
+            );
+
+
+            delete window[callback];
+
+
+            script.remove();
+
+
+            boton.disabled = false;
+
+            boton.innerHTML =
+                "🔐 Ingresar";
+
+
+            /*
+             * ==================================
+             * AUTORIZACIÓN CORRECTA
+             * ==================================
+             */
+
+            if(
+                respuesta &&
+                respuesta.ok === true
+            ){
+
+                tokenLector =
+                    respuesta.token;
+
+
+                estado.innerHTML = `
+
+                    <div style="
+                        background:#EEF7EE;
+                        border:1px solid #B7E4C7;
+                        border-radius:10px;
+                        padding:15px;
+                        color:#2E7D32;
+                    ">
+
+                        <b>
+                            ✅ Autorización correcta
+                        </b>
+
+                        <br><br>
+
+                        Preparando lector...
+
+                    </div>
+
+                `;
+
+
+                setTimeout(
+                    function(){
+
+                        mostrarLector();
+
+                    },
+                    700
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+             * ==================================
+             * AUTORIZACIÓN RECHAZADA
+             * ==================================
+             */
+
+            estado.innerHTML = `
+
+                <div style="
+                    background:#FDECEC;
+                    border:1px solid #F5C2C2;
+                    border-radius:10px;
+                    padding:15px;
+                    color:#B00020;
+                ">
+
+                    ❌
+
+                    <b>
+                        Código incorrecto
+                    </b>
+
+                    <br><br>
+
+                    Verificá el código
+                    de Secretaría.
+
+                </div>
+
+            `;
+
+
+            input.value = "";
+
+            input.focus();
+
+        };
+
+
+    const script =
+        document.createElement(
+            "script"
+        );
+
+
+    script.src =
+        "https://script.google.com/macros/s/" +
+        "AKfycbwyKsXfNxet9ScWu1sQ40eoy6Q2rYfMKsmd6Ic3Fy39AEmw8raRAH74chzsfq6qksouJQ" +
+        "/exec" +
+        "?accion=autorizarLector" +
+        "&codigo=" +
+        encodeURIComponent(codigo) +
+        "&callback=" +
+        encodeURIComponent(callback);
+
+
+    script.onerror =
+        function(){
+
+            script.remove();
+
+
+            boton.disabled = false;
+
+            boton.innerHTML =
+                "🔐 Ingresar";
+
+
+            estado.innerHTML = `
+
+                <div style="
+                    background:#FDECEC;
+                    border:1px solid #F5C2C2;
+                    border-radius:10px;
+                    padding:15px;
+                    color:#B00020;
+                ">
+
+                    ❌ No se pudo conectar
+                    con el servidor.
+
+                </div>
+
+            `;
+
+        };
+
+
+    document.body.appendChild(
+        script
+    );
+
+}
+    // ==========================================
+// MOSTRAR LECTOR
+// ==========================================
+
+function mostrarLector(){
+
+    const autorizacion =
+        document.getElementById(
+            "pantallaAutorizacion"
+        );
+
+
+    const lector =
+        document.getElementById(
+            "pantallaLector"
+        );
+
+
+    if(autorizacion){
+
+        autorizacion.style.display =
+            "none";
+
+    }
+
+
+    if(lector){
+
+        lector.style.display =
+            "block";
+
+    }
+
+}
 
 
     function iniciarScanner(){
@@ -368,111 +739,7 @@
         });
 
     }
-    function respuestaConexion(respuesta){
-
-    console.log(
-        "Respuesta Apps Script:",
-        respuesta
-    );
-
-    const estado =
-        document.getElementById("estado");
-
-    if(!estado){
-
-        return;
-
-    }
-
-    estado.innerHTML = `
-
-        <div style="
-            background:#EEF7EE;
-            border:1px solid #B7E4C7;
-            border-radius:10px;
-            padding:18px;
-            color:#2E7D32;
-            text-align:center;
-        ">
-
-            <div style="
-                font-size:35px;
-                margin-bottom:8px;
-            ">
-                ✅
-            </div>
-
-            <b>
-                CONEXIÓN CORRECTA
-            </b>
-
-            <br><br>
-
-            ${respuesta.mensaje}
-
-        </div>
-
-    `;
-
-}
-function probarConexionAppsScript(){
-
-    const estado =
-        document.getElementById("estado");
-
-
-    if(estado){
-
-        estado.innerHTML =
-            "⏳ Conectando con Apps Script...";
-
-    }
-
-
-    const script =
-        document.createElement("script");
-
-
-    script.src =
-        "https://script.google.com/macros/s/" +
-        "AKfycbwyKsXfNxet9ScWu1sQ40eoy6Q2rYfMKsmd6Ic3Fy39AEmw8raRAH74chzsfq6qksouJQ" +
-        "/exec" +
-        "?accion=pingLector" +
-        "&callback=respuestaConexion";
-
-
-    script.onerror = function(){
-
-        if(estado){
-
-            estado.innerHTML = `
-
-                <div style="
-                    background:#FDECEC;
-                    border:1px solid #F5C2C2;
-                    border-radius:10px;
-                    padding:15px;
-                    color:#B00020;
-                    text-align:center;
-                ">
-
-                    ❌ No se pudo cargar
-                    la respuesta de Apps Script.
-
-                </div>
-
-            `;
-
-        }
-
-    };
-
-
-    document.body.appendChild(
-        script
-    );
-
-}
+    
 </script>
 
 
