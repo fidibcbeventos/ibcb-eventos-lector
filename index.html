@@ -11,17 +11,360 @@
 
     <title>IBCB Eventos — Control de Acceso</title>
 
+    <script
+        src="https://unpkg.com/html5-qrcode"
+        type="text/javascript">
+    </script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+            padding: 20px;
+
+            background: #F5F7FA;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+        }
+
+        .contenedor {
+
+            width: 100%;
+            max-width: 600px;
+
+            margin: 0 auto;
+
+            background: #FFFFFF;
+
+            border-radius: 16px;
+
+            padding: 25px;
+
+            box-shadow:
+                0 4px 15px rgba(0,0,0,0.08);
+
+        }
+
+        .encabezado {
+
+            text-align: center;
+
+            margin-bottom: 25px;
+
+        }
+
+        .icono {
+
+            font-size: 55px;
+
+            margin-bottom: 5px;
+
+        }
+
+        h1 {
+
+            margin: 5px 0;
+
+            font-size: 26px;
+
+        }
+
+        .subtitulo {
+
+            color: #666666;
+
+            font-size: 15px;
+
+        }
+
+        #lectorQR {
+
+            width: 100%;
+
+            max-width: 500px;
+
+            margin: 20px auto;
+
+        }
+
+        button {
+
+            width: 100%;
+
+            border: 0;
+
+            border-radius: 10px;
+
+            padding: 15px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            background: #1677FF;
+
+            color: #FFFFFF;
+
+        }
+
+        button:disabled {
+
+            opacity: 0.6;
+
+            cursor: default;
+
+        }
+
+        #estado {
+
+            margin-top: 20px;
+
+            text-align: center;
+
+            font-size: 15px;
+
+            line-height: 1.5;
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
-    <h1>IBCB Eventos</h1>
+    <div class="contenedor">
 
-    <h2>📷 Control de Acceso</h2>
 
-    <p>
-        Lector QR
-    </p>
+        <div class="encabezado">
+
+            <div class="icono">
+                📷
+            </div>
+
+            <h1>
+                Control de Acceso
+            </h1>
+
+            <div class="subtitulo">
+
+                IBCB Eventos
+
+            </div>
+
+        </div>
+
+
+        <!-- LECTOR -->
+
+        <div id="lectorQR"></div>
+
+
+        <!-- ESTADO -->
+
+        <div id="estado">
+
+            Presioná el botón para activar
+            la cámara.
+
+        </div>
+
+
+        <br>
+
+
+        <button
+            id="btnIniciarScanner"
+            onclick="iniciarScanner()">
+
+            📷 Activar cámara
+
+        </button>
+
+
+    </div>
+
+
+<script>
+
+    let scannerQR = null;
+
+    let scannerActivo = false;
+
+
+    function iniciarScanner(){
+
+        const estado =
+            document.getElementById(
+                "estado"
+            );
+
+        const boton =
+            document.getElementById(
+                "btnIniciarScanner"
+            );
+
+
+        if(scannerActivo){
+
+            return;
+
+        }
+
+
+        estado.innerHTML =
+            "⏳ Iniciando cámara...";
+
+
+        boton.disabled = true;
+
+
+        scannerQR =
+            new Html5Qrcode(
+                "lectorQR"
+            );
+
+
+        const configuracion = {
+
+            fps: 10,
+
+            qrbox: {
+
+                width: 250,
+
+                height: 250
+
+            }
+
+        };
+
+
+        scannerQR.start(
+
+            {
+                facingMode:
+                    "environment"
+            },
+
+            configuracion,
+
+            function(decodedText){
+
+                console.log(
+                    "QR detectado:",
+                    decodedText
+                );
+
+
+                estado.innerHTML = `
+
+                    <div style="
+                        background:#EEF7EE;
+                        padding:15px;
+                        border-radius:10px;
+                        color:#2E7D32;
+                    ">
+
+                        <b>
+                            ✅ QR detectado
+                        </b>
+
+                        <br><br>
+
+                        Código:
+
+                        <b>
+                            ${decodedText}
+                        </b>
+
+                    </div>
+
+                `;
+
+
+                /*
+                 * Por ahora NO enviamos
+                 * nada a Apps Script.
+                 *
+                 * Primero comprobamos
+                 * que el lector funcione.
+                 */
+
+            },
+
+            function(errorMessage){
+
+                /*
+                 * No mostramos errores
+                 * de búsqueda.
+                 */
+
+            }
+
+        )
+
+        .then(function(){
+
+            scannerActivo = true;
+
+            estado.innerHTML =
+                "📷 Cámara activa.<br>" +
+                "Apuntá al código QR.";
+
+        })
+
+        .catch(function(error){
+
+            console.error(
+                error
+            );
+
+
+            scannerActivo = false;
+
+            boton.disabled = false;
+
+
+            estado.innerHTML = `
+
+                <div style="
+                    background:#FDECEC;
+                    border:1px solid #F5C2C2;
+                    border-radius:10px;
+                    padding:15px;
+                    color:#B00020;
+                ">
+
+                    ❌ No se pudo activar
+                    la cámara.
+
+                    <br><br>
+
+                    ${error}
+
+                </div>
+
+            `;
+
+        });
+
+    }
+
+</script>
+
 
 </body>
 
