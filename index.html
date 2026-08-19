@@ -324,6 +324,20 @@
                 📷 Activar cámara
 
             </button>
+            <br><br>
+
+<button
+    id="btnCerrarSesion"
+    onclick="cerrarSesionLector()"
+    style="
+        background:#FDECEC;
+        color:#B00020;
+        border:1px solid #F5C2C2;
+    ">
+
+    🚪 Cerrar sesión
+
+</button>
 
         </div>
 
@@ -1456,6 +1470,171 @@ actualizarContadorIngresos();
         </div>
 
     `;
+
+}
+    // ==========================================
+// CERRAR SESIÓN DEL LECTOR
+// ==========================================
+
+function cerrarSesionLector(){
+
+    /*
+     * ==========================================
+     * DETENER CÁMARA
+     * ==========================================
+     */
+
+    if(
+        scannerQR &&
+        scannerActivo
+    ){
+
+        scannerQR.stop()
+
+            .then(function(){
+
+                console.log(
+                    "Cámara detenida correctamente."
+                );
+
+            })
+
+            .catch(function(error){
+
+                console.error(
+                    "Error al detener cámara:",
+                    error
+                );
+
+            });
+
+    }
+
+
+    /*
+     * ==========================================
+     * LIMPIAR ESTADO DEL SCANNER
+     * ==========================================
+     */
+
+    scannerActivo = false;
+
+    scannerQR = null;
+
+    procesandoQR = false;
+
+
+    /*
+     * ==========================================
+     * ELIMINAR TOKEN
+     * ==========================================
+     */
+
+    tokenLector = null;
+
+
+    /*
+     * ==========================================
+     * REINICIAR CONTADORES
+     * ==========================================
+     */
+
+    ingresosRegistrados = 0;
+
+    expiracionToken = null;
+
+
+    /*
+     * ==========================================
+     * LIMPIAR LECTOR
+     * ==========================================
+     */
+
+    const lector =
+        document.getElementById(
+            "lectorQR"
+        );
+
+
+    if(lector){
+
+        lector.innerHTML = "";
+
+    }
+
+
+    /*
+     * ==========================================
+     * MOSTRAR AUTORIZACIÓN
+     * ==========================================
+     */
+
+    const autorizacion =
+        document.getElementById(
+            "pantallaAutorizacion"
+        );
+
+
+    const pantallaLector =
+        document.getElementById(
+            "pantallaLector"
+        );
+
+
+    if(pantallaLector){
+
+        pantallaLector.style.display =
+            "none";
+
+    }
+
+
+    if(autorizacion){
+
+        autorizacion.style.display =
+            "block";
+
+    }
+
+
+    /*
+     * ==========================================
+     * LIMPIAR CÓDIGO ANTERIOR
+     * ==========================================
+     */
+
+    const input =
+        document.getElementById(
+            "codigoSecretaria"
+        );
+
+
+    if(input){
+
+        input.value = "";
+
+        input.focus();
+
+    }
+
+
+    /*
+     * ==========================================
+     * LIMPIAR MENSAJE
+     * ==========================================
+     */
+
+    const estado =
+        document.getElementById(
+            "estadoAutorizacion"
+        );
+
+
+    if(estado){
+
+        estado.innerHTML = "";
+
+    }
 
 }
     
