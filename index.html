@@ -340,99 +340,7 @@
 
 
             scannerActivo = false;
-            function probarConexionAppsScript(){
-
-    const estado =
-        document.getElementById("estado");
-
-
-    estado.innerHTML =
-        "⏳ Probando conexión con Apps Script...";
-
-
-    const callback =
-        "respuestaPrueba_" + Date.now();
-
-
-    window[callback] = function(respuesta){
-
-        console.log(
-            "Respuesta Apps Script:",
-            respuesta
-        );
-
-
-        estado.innerHTML = `
-
-            <div style="
-                background:#EEF7EE;
-                border:1px solid #B7E4C7;
-                border-radius:10px;
-                padding:18px;
-                color:#2E7D32;
-                text-align:center;
-            ">
-
-                <b>
-                    ✅ CONEXIÓN CORRECTA
-                </b>
-
-                <br><br>
-
-                ${respuesta.mensaje}
-
-            </div>
-
-        `;
-
-
-        delete window[callback];
-
-        script.remove();
-
-    };
-
-
-    const script =
-        document.createElement("script");
-
-
-    script.src =
-        "https://script.google.com/macros/s/" +
-        "AKfycbwyKsXfNxet9ScWu1sQ40eoy6Q2rYfMKsmd6Ic3Fy39AEmw8raRAH74chzsfq6qksouJQ" +
-        "/exec" +
-        "?accion=pingLector" +
-        "&callback=" +
-        encodeURIComponent(callback);
-
-
-    script.onerror = function(){
-
-        estado.innerHTML = `
-
-            <div style="
-                background:#FDECEC;
-                padding:15px;
-                border-radius:10px;
-                color:#B00020;
-            ">
-
-                ❌ No se pudo conectar
-                con Apps Script.
-
-            </div>
-
-        `;
-
-    };
-
-
-    document.body.appendChild(
-        script
-    );
-
-}
-
+            
             boton.disabled = false;
 
 
@@ -460,7 +368,111 @@
         });
 
     }
+    function respuestaConexion(respuesta){
 
+    console.log(
+        "Respuesta Apps Script:",
+        respuesta
+    );
+
+    const estado =
+        document.getElementById("estado");
+
+    if(!estado){
+
+        return;
+
+    }
+
+    estado.innerHTML = `
+
+        <div style="
+            background:#EEF7EE;
+            border:1px solid #B7E4C7;
+            border-radius:10px;
+            padding:18px;
+            color:#2E7D32;
+            text-align:center;
+        ">
+
+            <div style="
+                font-size:35px;
+                margin-bottom:8px;
+            ">
+                ✅
+            </div>
+
+            <b>
+                CONEXIÓN CORRECTA
+            </b>
+
+            <br><br>
+
+            ${respuesta.mensaje}
+
+        </div>
+
+    `;
+
+}
+function probarConexionAppsScript(){
+
+    const estado =
+        document.getElementById("estado");
+
+
+    if(estado){
+
+        estado.innerHTML =
+            "⏳ Conectando con Apps Script...";
+
+    }
+
+
+    const script =
+        document.createElement("script");
+
+
+    script.src =
+        "https://script.google.com/macros/s/" +
+        "AKfycbwyKsXfNxet9ScWu1sQ40eoy6Q2rYfMKsmd6Ic3Fy39AEmw8raRAH74chzsfq6qksouJQ" +
+        "/exec" +
+        "?accion=pingLector" +
+        "&callback=respuestaConexion";
+
+
+    script.onerror = function(){
+
+        if(estado){
+
+            estado.innerHTML = `
+
+                <div style="
+                    background:#FDECEC;
+                    border:1px solid #F5C2C2;
+                    border-radius:10px;
+                    padding:15px;
+                    color:#B00020;
+                    text-align:center;
+                ">
+
+                    ❌ No se pudo cargar
+                    la respuesta de Apps Script.
+
+                </div>
+
+            `;
+
+        }
+
+    };
+
+
+    document.body.appendChild(
+        script
+    );
+
+}
 </script>
 
 
